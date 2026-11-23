@@ -2,7 +2,7 @@
 // Writes a single original one-sentence story to /output/entry.txt.
 // Node 22, standard library only. Deterministic: no clock, no network,
 // no randomness. The file holds exactly the sentence, no trailing newline.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const STORY =
@@ -21,4 +21,14 @@ if (terminators !== 1 || !STORY.endsWith(".")) {
 
 const outDir = process.argv[2] || process.env.OUTPUT_DIR || "/output";
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "entry.txt"), STORY, "utf8");
+const outPath = join(outDir, "entry.txt");
+writeFileSync(outPath, STORY, "utf8");
+
+// Verify-after-write: read the file back and confirm it is byte-identical
+// to STORY, so a partial or corrupted write fails loudly instead of
+// silently producing a wrong entry.
+const written = readFileSync(outPath, "utf8");
+if (written !== STORY) {
+  throw new Error(`verify-after-write failed: ${outPath} does not match the story`);
+}
+console.log(`wrote ${chars} characters to ${outPath}`);
